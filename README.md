@@ -94,6 +94,3 @@ sysinfo/
 - Available information may vary by Linux distribution, hardware, and execution environment.
 - Detailed storage output may include mount points that are virtual, duplicated, or inaccessible.
 
-## License
-
-No license has been specified yet. Add a `LICENSE` file if you intend to publish or distribute the project under a particular open-source license.
