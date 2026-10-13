@@ -1,6 +1,11 @@
-from pathlib import Path
 import argparse
 
+# import outputs
+
+from cpu import show_cpu
+from memory import show_memory
+from storage import show_storage
+from system import show_system
 
 # arguments
 
@@ -13,51 +18,66 @@ def parse_args():
     parser.add_argument(
         "-c", "--convert",
         type=str,
-        help="Convert memory values to B, KiB, MiB, GiB, TiB, MB, GB, or TB",
         choices=["B", "KiB", "MiB", "GiB", "TiB", "MB", "GB", "TB"],
-        default="GiB"
+        default="GiB",
+        help="Choose the memory display unit (default: GiB)"
     )
 
-    return parser.parse_args()
+    parser.add_argument(
+        "-s", "--section",
+        choices=["CPU", "MEM", "DISK", "SYS"],
+        default=None,
+        help="Choose a section: CPU, MEM, DISK, or SYS"
+    )
 
+    parser.add_argument(
+        "-A", "--almost-all",
+        action="store_true",
+        help="Show all statistics for the selected section"
+    )
 
-# helpers
+    parser.add_argument(
+        "-a", "--all",
+        action="store_true",
+        help="Show every statistic from every section"
+    )
 
-def convert_values(value, size):
-    unit_sizes = {
-        "B": 1,
-        "KiB": 1024,
-        "MiB": 1024 ** 2,
-        "GiB": 1024 ** 3,
-        "TiB": 1024 ** 4,
-        "MB": 1000 ** 2,
-        "GB": 1000 ** 3,
-        "TB": 1000 ** 4
-    }
+    args = parser.parse_args()
 
-    # /proc/meminfo reports memory in KiB
-    value_in_bytes = value * 1024
+    if args.almost_all and args.section is None:
+        parser.error("--almost-all requires --section")
 
-    return value_in_bytes / unit_sizes[size]
+    if args.all and (args.section is not None or args.almost_all):
+        parser.error("--all cannot be combined with --section or --almost-all")
 
+    if args.section is None and not args.all:
+        args.section = "SYS"
 
-# memory
+    return args
+
+# main
+
 
 def main():
     args = parse_args()
 
-    mem_path = Path("/proc/meminfo")
-    mem_info = mem_path.read_text().splitlines()
+    if args.all:
+        show_cpu(all_info=True)
+        show_memory(args.convert, all_info=True)
+        show_storage(all_info=True)
+        show_system(all_info=True)
 
-    for line in mem_info:
-        if line.startswith("MemTotal:"):
-            parts = line.split()
-            ram_kib = int(parts[1])
+    elif args.section == "CPU":
+        show_cpu(all_info=args.almost_all)
 
-            converted = convert_values(ram_kib, args.convert)
+    elif args.section == "MEM":
+        show_memory(args.convert, all_info=args.almost_all)
 
-            print(f"Total RAM: {converted:.2f} {args.convert}")
-            break
+    elif args.section == "DISK":
+        show_storage(all_info=args.almost_all)
+
+    elif args.section == "SYS":
+        show_system()
 
 
 if __name__ == "__main__":
